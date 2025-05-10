@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DES3D Parameter Configuration</title>
+    <style>
+        body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; color: #333; line-height: 1.6; }
+        .container { max-width: 900px; margin: 20px auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
+        
+        .upload-section { margin-bottom: 20px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f9f9f9; }
+        .upload-section label { font-weight: bold; display: block; margin-bottom: 8px; }
+        .upload-section input[type="file"] { display: block; margin-top: 5px; }
+
+        fieldset.collapsible-section { 
+            margin-bottom: 20px; 
+            padding: 0; /* Remove default fieldset padding */
+            border: 1px solid #ccc; /* Keep a border for the whole section */
+            border-radius: 5px;
+        }
+        
+        legend.collapsible-header { 
+            font-weight: bold; 
+            font-size: 1.2em; 
+            color: #2c3e50; 
+            padding: 12px 15px; 
+            cursor: pointer; 
+            user-select: none;
+            background-color: #e9ecef;
+            border-bottom: 1px solid #ccc;
+            width: calc(100% - 30px); /* Full width minus padding */
+            margin: 0;
+            border-radius: 4px 4px 0 0; /* Rounded top corners */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        legend.collapsible-header:hover { background-color: #dde2e6; }
+        legend.collapsible-header .toggle-icon { font-size: 1em; transition: transform 0.2s ease-in-out; }
+        
+        .collapsible-section.expanded > .collapsible-header .toggle-icon { transform: rotate(90deg); }
+        /* .collapsible-section.collapsed > .collapsible-header .toggle-icon { transform: rotate(0deg); } /* Default state */
+
+
+        .collapsible-content {
+            padding: 15px; /* Padding for the content area */
+            background-color: #fdfdfd;
+            border-top: none; 
+            border-radius: 0 0 4px 4px; /* Rounded bottom corners */
+            overflow: hidden;
+            max-height: 0; /* Start collapsed */
+            transition: max-height 0.35s ease-in-out;
+        }
+        
+        .param-item { margin-bottom: 18px; }
+        .param-item label { display: block; font-weight: 600; margin-bottom: 6px; color: #444; }
+        .param-item input[type="text"],
+        .param-item input[type="number"],
+        .param-item select {
+            width: 100%; 
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 0.95em;
+        }
+        .param-item input:focus, .param-item select:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 0.2rem rgba(52,152,219,.25);
+            outline: none;
+        }
+        .param-item .description {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 6px;
+            line-height: 1.5;
+            white-space: pre-wrap; /* Preserve newlines from description */
+        }
+        .param-item input:required { border-left: 3px solid #e74c3c; } /* Highlight required fields */
+        
+        .output-area { margin-top: 30px; }
+        .output-area h3 { color: #2c3e50; margin-bottom: 10px; }
+        textarea#configOutput { 
+            width: 100%; 
+            min-height: 300px; 
+            box-sizing: border-box; 
+            padding: 10px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.9em;
+            white-space: pre;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-right: 10px;
+            transition: background-color 0.2s ease;
+        }
+        button:hover { background-color: #2980b9; }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        #downloadConfigButton { background-color: #2ecc71; }
+        #downloadConfigButton:hover { background-color: #27ae60; }
+        #errorMessages { color: #e74c3c; margin-bottom: 15px; font-weight: bold; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DES3D Parameter Configuration</h1>
+
+        <div class="upload-section">
+            <label for="configFileUpload">Upload Existing Config File (e.g., .cfg, .ini):</label>
+            <input type="file" id="configFileUpload" accept=".cfg,.ini,.input,.txt">
+            <small class="help-text">Select a configuration file to pre-fill the form. Parameters in the file will update the fields below.</small>
+        </div>
+
+        <form id="parameterForm">
+            </form>
+
+        <div class="output-area">
+            <button type="button" id="generateConfigButton">Generate Config</button>
+            <button type="button" id="downloadConfigButton" style="display:none;">Download Config File</button>
+            <h3>Generated Configuration:</h3>
+            <div id="errorMessages"></div>
+            <textarea id="configOutput" readonly placeholder="Generated boost::program_options config will appear here..."></textarea>
+        </div>
+    </div>
+
+    <script src="parameters.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('parameterForm');
+            const generateConfigButton = document.getElementById('generateConfigButton');
+            const downloadConfigButton = document.getElementById('downloadConfigButton');
+            const configOutputTextarea = document.getElementById('configOutput'); // Renamed for clarity
+            const errorMessagesDiv = document.getElementById('errorMessages');
+            const configFileUploadInput = document.getElementById('configFileUpload');
+
+            // Group parameters for form generation
+            const groupedParameters = parameters.reduce((acc, param) => {
+                if (!acc[param.group]) {
+                    acc[param.group] = [];
+                }
+                acc[param.group].push(param);
+                return acc;
+            }, {});
+
+            // Dynamically create form elements with collapsible sections
+            for (const groupName in groupedParameters) {
+                const fieldset = document.createElement('fieldset');
+                fieldset.classList.add('collapsible-section', 'collapsed'); // Start collapsed
+
+                const legend = document.createElement('legend');
+                legend.classList.add('collapsible-header');
+                legend.setAttribute('tabindex', '0'); 
+                legend.setAttribute('role', 'button');
+                legend.setAttribute('aria-expanded', 'false');
+                
+                const legendTextSpan = document.createElement('span');
+                legendTextSpan.textContent = groupName.charAt(0).toUpperCase() + groupName.slice(1) + " Parameters";
+                legend.appendChild(legendTextSpan);
+
+                const toggleIcon = document.createElement('span');
+                toggleIcon.classList.add('toggle-icon');
+                toggleIcon.innerHTML = '&#9658;'; // Right-pointing triangle (collapsed)
+                legend.appendChild(toggleIcon);
+                
+                fieldset.appendChild(legend);
+
+                const contentDiv = document.createElement('div');
+                contentDiv.classList.add('collapsible-content');
+
+                groupedParameters[groupName].forEach(param => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.classList.add('param-item');
+
+                    const label = document.createElement('label');
+                    label.setAttribute('for', param.fullName);
+                    label.textContent = param.fullName + (param.isRequired ? ' *' : '');
+                    itemDiv.appendChild(label);
+
+                    let inputElement;
+                    if (param.htmlType === 'select') {
+                        inputElement = document.createElement('select');
+                        if (param.options) {
+                            param.options.forEach(opt => {
+                                const option = document.createElement('option');
+                                option.value = opt.value;
+                                option.textContent = opt.text;
+                                if (param.defaultValue === opt.value) {
+                                    option.selected = true;
+                                }
+                                inputElement.appendChild(option);
+                            });
+                        }
+                    } else {
+                        inputElement = document.createElement('input');
+                        inputElement.type = param.htmlType;
+                        if (param.defaultValue !== "" && param.defaultValue !== undefined) {
+                            inputElement.value = param.defaultValue;
+                        }
+                        if (param.placeholder) {
+                            inputElement.placeholder = param.placeholder;
+                        }
+                        if (param.attrs) {
+                            for (const attrKey in param.attrs) { // Renamed attr to attrKey
+                                inputElement.setAttribute(attrKey, param.attrs[attrKey]);
+                            }
+                        }
+                    }
+                    inputElement.id = param.fullName;
+                    inputElement.name = param.fullName;
+                    if (param.isRequired) {
+                        inputElement.required = true;
+                    }
+                    itemDiv.appendChild(inputElement);
+
+                    const descriptionDiv = document.createElement('div'); // Renamed description to descriptionDiv
+                    descriptionDiv.classList.add('description');
+                    descriptionDiv.innerHTML = param.description.replace(/\n/g, "<br>");
+                    itemDiv.appendChild(descriptionDiv);
+
+                    contentDiv.appendChild(itemDiv);
+                });
+
+                fieldset.appendChild(contentDiv);
+                form.appendChild(fieldset);
+
+                legend.addEventListener('click', function() {
+                    const isExpanded = this.getAttribute('aria-expanded') === 'true';
+                    const currentContent = this.nextElementSibling; 
+                    const icon = this.querySelector('.toggle-icon');
+
+                    if (isExpanded) {
+                        currentContent.style.maxHeight = '0px';
+                        this.setAttribute('aria-expanded', 'false');
+                        this.parentElement.classList.remove('expanded');
+                        this.parentElement.classList.add('collapsed');
+                        if (icon) icon.innerHTML = '&#9658;'; 
+                    } else {
+                        currentContent.style.maxHeight = currentContent.scrollHeight + "px";
+                        this.setAttribute('aria-expanded', 'true');
+                        this.parentElement.classList.add('expanded');
+                        this.parentElement.classList.remove('collapsed');
+                        if (icon) icon.innerHTML = '&#9660;'; 
+                    }
+                });
+                legend.addEventListener('keydown', function(event) {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault(); 
+                        this.click();
+                    }
+                });
+                contentDiv.style.maxHeight = '0px'; // Ensure all start collapsed
+            }
+            
+            // Optionally open the first section
+            const firstLegend = form.querySelector('.collapsible-header');
+            if (firstLegend) {
+                // firstLegend.click(); // Uncomment to open the first section by default
+            }
+
+
+            // File Upload Logic
+            configFileUploadInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const fileContent = e.target.result;
+                        parseAndApplyConfigFile(fileContent);
+                        alert(`Configuration file "${file.name}" processed. Form fields have been updated.`);
+                    } catch (error) {
+                        console.error("Error processing config file:", error);
+                        alert(`Error processing file: ${error.message}`);
+                    }
+                };
+                reader.onerror = (e) => { console.error("Error reading file:", e); alert("Error reading file."); };
+                reader.readAsText(file);
+                event.target.value = null; // Clear input
+            });
+
+            function parseAndApplyConfigFile(content) {
+                let currentSection = null;
+                const lines = content.split(/\r?\n/);
+                lines.forEach(line => {
+                    line = line.trim();
+                    if (!line || line.startsWith(';') || line.startsWith('#')) return;
+
+                    const sectionMatch = line.match(/^\[\s*([^\]\s]+)\s*\]$/);
+                    if (sectionMatch) {
+                        currentSection = sectionMatch[1].trim();
+                        return;
+                    }
+
+                    const keyValueMatch = line.match(/^([^=\s]+)\s*=\s*(.*)$/);
+                    if (keyValueMatch && currentSection) {
+                        const shortName = keyValueMatch[1].trim();
+                        let value = keyValueMatch[2].trim();
+                        const fullName = `${currentSection}.${shortName}`;
+                        const paramDef = parameters.find(p => p.fullName === fullName || (p.group === currentSection && p.shortName === shortName));
+
+                        if (paramDef) {
+                            const inputElement = document.getElementById(paramDef.fullName);
+                            if (inputElement) {
+                                if (typeof value === 'string') {
+                                    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+                                        value = value.substring(1, value.length - 1);
+                                    }
+                                }
+                                if (paramDef.htmlType === "select" && paramDef.cppType === "bool") {
+                                    inputElement.value = (value.toLowerCase() === "true" || value === "1") ? "true" : "false";
+                                } else {
+                                    inputElement.value = value;
+                                }
+                                // Trigger change for conditional logic if this element controls others
+                                const changeEvent = new Event('change', { bubbles: true });
+                                inputElement.dispatchEvent(changeEvent);
+                            }
+                        }
+                    }
+                });
+            }
+
+
+            // Generate Config Logic
+            generateConfigButton.addEventListener('click', () => {
+                let outputString = "";
+                let isValid = true;
+                errorMessagesDiv.innerHTML = ""; 
+
+                for (const groupName in groupedParameters) {
+                    let sectionHasValues = false;
+                    let sectionOutput = ""; 
+
+                    groupedParameters[groupName].forEach(param => {
+                        const inputElement = document.getElementById(param.fullName);
+                        if (!inputElement) return;
+
+                        let value = inputElement.value;
+                        inputElement.style.borderColor = '#ccc'; 
+
+                        if (param.isRequired && !value.trim() && !(param.htmlType === 'select' && value)) {
+                             if (param.htmlType === 'select' && inputElement.options[inputElement.selectedIndex] && inputElement.options[inputElement.selectedIndex].value === ""){
+                                // This case needs careful thought: is an empty option value valid for a required select?
+                                // Assuming for now that if it's required, an actual value must be selected.
+                                errorMessagesDiv.innerHTML += `<p>Error: Parameter '${param.fullName}' is required.</p>`;
+                                isValid = false;
+                                inputElement.style.borderColor = 'red';
+                                return; 
+                             } else if (value.trim() === "" || (param.htmlType === 'select' && !value) ) {
+                                errorMessagesDiv.innerHTML += `<p>Error: Parameter '${param.fullName}' is required.</p>`;
+                                isValid = false;
+                                inputElement.style.borderColor = 'red';
+                                return;
+                             }
+                        }
+                        
+                        // Output if user entered a value, OR if it's different from the JS-defined default, OR if it's boolean
+                        // Boost program_options typically uses C++ defaults if not in file.
+                        // So, only write if user provides a value OR if it's a boolean (to explicitly write true/false)
+                        // OR if the value is different from the original default from C++ (param.defaultValue)
+                        // This simplified logic writes if there's a value, or if it's a bool (to write true/false explicitly)
+                        let valueToWrite = value.trim();
+                        if (valueToWrite !== "" || param.cppType === "bool") {
+                           sectionOutput += `${param.shortName} = ${valueToWrite}\n`;
+                           sectionHasValues = true;
+                        }
+                    });
+
+                    if (isValid && sectionHasValues) { 
+                        outputString += `[${groupName}]\n`;
+                        outputString += sectionOutput;
+                        outputString += "\n"; 
+                    }
+                }
+
+                if (isValid) {
+                    configOutputTextarea.value = outputString.trim();
+                    downloadConfigButton.style.display = 'inline-block';
+                } else {
+                    configOutputTextarea.value = "Please fix the errors above.";
+                    downloadConfigButton.style.display = 'none';
+                }
+            });
+
+            // Download Config Logic
+            downloadConfigButton.addEventListener('click', () => {
+                const text = configOutputTextarea.value;
+                const modelnameParamDef = parameters.find(p => p.fullName === 'sim.modelname');
+                let filename = "parameters"; 
+                if (modelnameParamDef) {
+                    const modelnameInput = document.getElementById(modelnameParamDef.fullName);
+                    if (modelnameInput && modelnameInput.value.trim()) {
+                        filename = modelnameInput.value.trim();
+                    }
+                }
+
+                const element = document.createElement('a');
+                element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+                element.setAttribute('download', filename + ".cfg"); 
+                element.style.display = 'none';
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+            });
+        });
+    </script>
+</body>
+</html>
