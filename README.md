@@ -37,43 +37,24 @@ The goal of this tool is to provide a user-friendly interface for setting up sim
     * **Generate:** Once the form is populated (either manually, by upload, or from an example), click the "Generate Config" button. The formatted configuration text will appear in the text area below. Any required fields that are empty will be flagged.
     * **Download:** If the configuration is generated successfully, click the "Download Config File" button to save it.
 
-## Maintaining Parameter Synchronization (`input.cxx` -> Web Form)
-
-The parameters in the web form are defined in a JavaScript array within the `index.html` file (or a linked `generated_parameters.js` file). To keep this synchronized with the `input.cxx` file from the main DES3D source code:
-
-1.  **`parse_parameters.py` Script:**
-    This repository includes a Python script named `parse_parameters.py`. This script is designed to:
-    * Read a copy of the DES3D `input.cxx` file.
-    * Parse the `declare_parameters()` function to extract all parameter definitions.
-    * Generate a JavaScript file (e.g., `generated_parameters.js`) containing the updated `parameters` array.
-
-2.  **How to Update:**
-    * Whenever `input.cxx` in the main DES3D project changes:
-        1.  Place the latest `input.cxx` in the same directory as `parse_parameters.py` (or configure the path in the script).
-        2.  Run the Python script: `python parse_parameters.py`
-        3.  This will update/create `generated_parameters.js`.
-        4.  Ensure your `index.html` correctly loads this `generated_parameters.js` file.
-        5.  Commit the changes to `generated_parameters.js` (and `index.html` if its script loading changed) to this `des-inputgen` repository.
-
-    *(Note: You may need to manually review and adjust the `enum_like_options` dictionary within `parse_parameters.py` if new integer parameters are added that should be represented as dropdowns with specific choices.)*
-
 ## Structure of the Repository (Primary Files)
 
 * `index.html`: The main web page containing the form, embedded CSS, and JavaScript logic.
-* `input.cxx`: A reference copy of the C++ source file from which parameters are derived (used by the parser script).
-* `parse_parameters.py`: Python script to parse `input.cxx` and generate the JavaScript parameter definitions.
-* `generated_parameters.js` (Recommended): The auto-generated JavaScript file containing the `parameters` array, loaded by `index.html`.
+* `parameters.js`: The JavaScript file containing the `parameters` array, loaded by `index.html`.
 * `README.md`: This file.
 
 ## Development / Contributing
 
 (You can add details here if you want others to contribute or if you have specific setup instructions for development)
 
-* To update the parameter list, obtain the latest `input.cxx` from the DES3D project and re-run `python parse_parameters.py`.
+* To update the parameter list, obtain the latest `input.cxx` from the DES3D project.
 * The main form logic and UI are within `index.html`.
 
 ## Future Enhancements (Ideas)
 
+* Automating the parameter synchronization (`input.cxx` -> Web Form)
+   * The parameters in the web form are defined in a JavaScript array, `parameters.js` file.
+   * To keep this synchronized with the `input.cxx` file from the main DES3D source code, one needs to read the changes to `input.cxx` and add them to `parameters.js`.
 * More sophisticated UI for list-based parameters (e.g., materials, fault segments) if applicable.
 * Advanced validation based on parameter interdependencies or ranges.
 * Visual themes or styling improvements.
