@@ -585,13 +585,87 @@
             // Fetch examples when the page loads
             fetchExampleList();
 
-            // --- Generate Config Logic (remains mostly the same) ---
-            generateConfigButton.addEventListener('click', () => { /* ... your existing logic ... */ });
-            // --- Download Config Logic (remains mostly the same) ---
-            downloadConfigButton.addEventListener('click', () => { /* ... your existing logic ... */ });
+            // Generate Config Logic
+            generateConfigButton.addEventListener('click', () => {
+                let outputString = "";
+                let isValid = true;
+                errorMessagesDiv.innerHTML = "";
 
-            // --- Initialize all inputs to default style and values on page load ---
-            resetAllInputStyles();
+                for (const groupName in groupedParameters) {
+                    let sectionHasValues = false;
+                    let sectionOutput = "";
+
+                    groupedParameters[groupName].forEach(param => {
+                        const inputElement = document.getElementById(param.fullName);
+                        if (!inputElement) return;
+
+                        let value = inputElement.value;
+                        inputElement.style.borderColor = '#ccc';
+
+                        if (param.isRequired && !value.trim() && !(param.htmlType === 'select' && value)) {
+                            if (param.htmlType === 'select' && inputElement.options[inputElement.selectedIndex] && inputElement.options[inputElement.selectedIndex].value === "") {
+                                // This case needs careful thought: is an empty option value valid for a required select?
+                                // Assuming for now that if it's required, an actual value must be selected.
+                                errorMessagesDiv.innerHTML += `<p>Error: Parameter '${param.fullName}' is required.</p>`;
+                                isValid = false;
+                                inputElement.style.borderColor = 'red';
+                                return;
+                            } else if (value.trim() === "" || (param.htmlType === 'select' && !value)) {
+                                errorMessagesDiv.innerHTML += `<p>Error: Parameter '${param.fullName}' is required.</p>`;
+                                isValid = false;
+                                inputElement.style.borderColor = 'red';
+                                return;
+                            }
+                        }
+
+                        // Output if user entered a value, OR if it's different from the JS-defined default, OR if it's boolean
+                        // Boost program_options typically uses C++ defaults if not in file.
+                        // So, only write if user provides a value OR if it's a boolean (to explicitly write true/false)
+                        // OR if the value is different from the original default from C++ (param.defaultValue)
+                        // This simplified logic writes if there's a value, or if it's a bool (to write true/false explicitly)
+                        let valueToWrite = value.trim();
+                        if (valueToWrite !== "" || param.cppType === "bool") {
+                            sectionOutput += `${param.shortName} = ${valueToWrite}\n`;
+                            sectionHasValues = true;
+                        }
+                    });
+
+                    if (isValid && sectionHasValues) {
+                        outputString += `[${groupName}]\n`;
+                        outputString += sectionOutput;
+                        outputString += "\n";
+                    }
+                }
+
+                if (isValid) {
+                    configOutputTextarea.value = outputString.trim();
+                    downloadConfigButton.style.display = 'inline-block';
+                } else {
+                    configOutputTextarea.value = "Please fix the errors above.";
+                    downloadConfigButton.style.display = 'none';
+                }
+            });
+
+            // Download Config Logic
+            downloadConfigButton.addEventListener('click', () => {
+                const text = configOutputTextarea.value;
+                const modelnameParamDef = parameters.find(p => p.fullName === 'sim.modelname');
+                let filename = "parameters";
+                if (modelnameParamDef) {
+                    const modelnameInput = document.getElementById(modelnameParamDef.fullName);
+                    if (modelnameInput && modelnameInput.value.trim()) {
+                        filename = modelnameInput.value.trim();
+                    }
+                }
+
+                const element = document.createElement('a');
+                element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+                element.setAttribute('download', filename + ".cfg");
+                element.style.display = 'none';
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+            });
         });
     </script>
     </script>
