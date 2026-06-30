@@ -1,0 +1,41 @@
+name: Handle DynEarthSol input.cxx change notification
+
+on:
+  repository_dispatch:
+    types: [input-cxx-changed]
+  workflow_dispatch:   # Allow manual trigger for testing
+
+jobs:
+  open-issue:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Open maintenance issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const payload = context.payload.client_payload || {};
+            const sha = payload.sha || '(unknown)';
+            const commitUrl = payload.commit_url
+              || 'https://github.com/GeoFLAC/DynEarthSol/blob/master/input.cxx';
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'DynEarthSol input.cxx has changed — update parameters.js',
+              body: [
+                '`input.cxx` in [GeoFLAC/DynEarthSol](https://github.com/GeoFLAC/DynEarthSol) ',
+                'was updated. The `declare_parameters()` function may have new, removed, or ',
+                'modified parameters that require corresponding changes in `parameters.js`.',
+                '',
+                `**Commit:** [${sha.slice(0, 7)}](${commitUrl})`,
+                '',
+                '### Checklist',
+                '- [ ] Review the commit diff for changes inside `declare_parameters()`',
+                '- [ ] Add / remove / update entries in `parameters.js` to match',
+                '- [ ] Close this issue once `parameters.js` is in sync',
+              ].join('\n'),
+              labels: ['maintenance'],
+            });
