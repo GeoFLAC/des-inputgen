@@ -465,6 +465,12 @@
                                 if (paramDef.htmlType === "select" && paramDef.cppType === "bool") {
                                     inputElement.value = (value.toLowerCase() === "true" || value === "1") ? "true" : "false";
                                 } else {
+                                    // Expand short rheology aliases to their canonical names
+                                    if (paramDef.fullName === "mat.rheology_type") {
+                                        value = value
+                                            .replace(/^elasto-plastic-rsf$/, "elasto-plastic-rate-state-friction")
+                                            .replace(/^elasto-visco-plastic-rsf$/, "elasto-visco-plastic-rate-state-friction");
+                                    }
                                     inputElement.value = value;
                                 }
                                 inputElement.classList.remove('default-value');

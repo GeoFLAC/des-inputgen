@@ -358,14 +358,14 @@ const parameters = [
 
     // mat section
     {
-        group: "mat", fullName: "mat.rheology_type", shortName: "rheology_type", cppType: "std::string", htmlType: "select", description: "Type of rheology, either 'elastic', 'viscous' (experimental), 'maxwell', 'elasto-plastic', 'elasto-visco-plastic', 'elasto-plastic-rsf', or 'elasto-visco-plastic-rsf'", defaultValue: "", isRequired: true, options: [ // Default value not specified in C++, but it's required
+        group: "mat", fullName: "mat.rheology_type", shortName: "rheology_type", cppType: "std::string", htmlType: "select", description: "Type of rheology, either 'elastic', 'viscous' (experimental), 'maxwell', 'elasto-plastic', 'elasto-visco-plastic', 'elasto-plastic-rate-state-friction', or 'elasto-visco-plastic-rate-state-friction' (short '-rsf' aliases are also accepted by DynEarthSol).", defaultValue: "", isRequired: true, options: [
             { value: "elastic", text: "elastic" },
             { value: "viscous", text: "viscous (experimental)" },
             { value: "maxwell", text: "maxwell" },
             { value: "elasto-plastic", text: "elasto-plastic" },
             { value: "elasto-visco-plastic", text: "elasto-visco-plastic" },
-            { value: "elasto-plastic-rsf", text: "elasto-plastic-rsf" },
-            { value: "elasto-visco-plastic-rsf", text: "elasto-visco-plastic-rsf" }
+            { value: "elasto-plastic-rate-state-friction", text: "elasto-plastic-rate-state-friction" },
+            { value: "elasto-visco-plastic-rate-state-friction", text: "elasto-visco-plastic-rate-state-friction" }
         ]
     },
     { group: "mat", fullName: "mat.is_plane_strain", shortName: "is_plane_strain", cppType: "bool", htmlType: "select", description: "Is the rheology formulation in plane strain (2D elasto-plastic case only)?", defaultValue: "false", isRequired: false, options: [{ value: "true", text: "Yes" }, { value: "false", text: "No" }] },
