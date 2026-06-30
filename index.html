@@ -518,29 +518,58 @@
             });
 
             // --- GitHub Examples Logic ---
-            const GITHUB_API_URL = 'https://api.github.com/repos/GeoFLAC/DynEarthSol/contents/examples?ref=master';
+            const GITHUB_REPO = 'GeoFLAC/DynEarthSol';
+            const GITHUB_REF = 'master';
+            const EXAMPLE_ROOT_DIRS = ['examples', 'benchmarks', 'benchmarks-cores'];
+
+            async function fetchCfgFiles(dirPath) {
+                const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/${dirPath}?ref=${GITHUB_REF}`;
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+                }
+                const items = await response.json();
+
+                const cfgFiles = [];
+                const subdirPromises = [];
+
+                for (const item of items) {
+                    if (item.type === 'file' && item.name.endsWith('.cfg')) {
+                        cfgFiles.push({ path: item.path, download_url: item.download_url });
+                    } else if (item.type === 'dir') {
+                        subdirPromises.push(fetchCfgFiles(item.path));
+                    }
+                }
+
+                const subdirResults = await Promise.all(subdirPromises);
+                for (const r of subdirResults) cfgFiles.push(...r);
+                return cfgFiles;
+            }
 
             async function fetchExampleList() {
                 try {
                     exampleLoadStatusP.textContent = 'Fetching example list...';
-                    const response = await fetch(GITHUB_API_URL);
-                    if (!response.ok) {
-                        throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
-                    }
-                    const files = await response.json();
 
-                    exampleConfigFileSelect.innerHTML = '<option value="">-- Select an example --</option>'; // Clear loading message
+                    const allResults = await Promise.all(
+                        EXAMPLE_ROOT_DIRS.map(dir =>
+                            fetchCfgFiles(dir).catch(err => {
+                                console.warn(`Could not fetch ${dir}:`, err);
+                                return [];
+                            })
+                        )
+                    );
+                    const allFiles = allResults.flat().sort((a, b) => a.path.localeCompare(b.path));
 
-                    files.forEach(file => {
-                        if (file.type === 'file' && file.name.endsWith('.cfg')) {
-                            const option = document.createElement('option');
-                            option.value = file.download_url; // URL to fetch raw content
-                            option.textContent = file.name;
-                            exampleConfigFileSelect.appendChild(option);
-                        }
+                    exampleConfigFileSelect.innerHTML = '<option value="">-- Select an example --</option>';
+                    allFiles.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file.download_url;
+                        option.textContent = file.path;
+                        exampleConfigFileSelect.appendChild(option);
                     });
+
                     loadExampleButton.disabled = false;
-                    exampleLoadStatusP.textContent = 'Example list loaded.';
+                    exampleLoadStatusP.textContent = `Example list loaded (${allFiles.length} config files).`;
 
                 } catch (error) {
                     console.error('Error fetching example list:', error);
