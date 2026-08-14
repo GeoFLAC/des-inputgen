@@ -45,19 +45,28 @@ The goal of this tool is to provide a user-friendly interface for setting up sim
 
 ## Development / Contributing
 
-(You can add details here if you want others to contribute or if you have specific setup instructions for development)
-
-* To update the parameter list, obtain the latest `input.cxx` from the DES3D project.
 * The main form logic and UI are within `index.html`.
+* The parameter list lives in `parameters.js` and must stay in sync with `declare_parameters()` in DynEarthSol's `input.cxx`.
+
+### Syncing `parameters.js` with DynEarthSol
+
+`.github/workflows/check-input-cxx.yml` opens an issue here whenever `input.cxx` changes upstream, citing a commit hash. **Don't trust that hash by itself** — it has pointed at unrelated commits (e.g. a workflow-file fix in DynEarthSol) rather than the actual `input.cxx` change, since the dispatch payload isn't always the commit that triggered it. Always verify against the live file instead:
+
+1. Fetch the current `input.cxx`: `curl -sL https://raw.githubusercontent.com/GeoFLAC/DynEarthSol/master/input.cxx`
+2. Extract every declared option name from it and from `parameters.js`, and diff the two sorted lists:
+   ```
+   grep -oE '\("[a-zA-Z_]+\.[a-zA-Z0-9_]+"' input.cxx | tr -d '("' | sort -u
+   ```
+   (this will also catch a few default-value strings that happen to look like `section.name` — e.g. filenames — and intentionally-commented-out `po::value(...)` lines in `input.cxx`; both are false positives to ignore, not real gaps)
+3. Add/remove/update entries in `parameters.js` for any real differences, matching the description, type, default, and section grouping from `input.cxx`.
+4. Update the sync banner near the top of `index.html` (see comment there) to point at the DynEarthSol PR that introduced the change, with its merge date.
+5. Close the tracking issue, referencing the commit(s).
 
 ## Future Enhancements (Ideas)
 
-* Automating the parameter synchronization (`input.cxx` -> Web Form)
-   * The parameters in the web form are defined in a JavaScript array, `parameters.js` file.
-   * To keep this synchronized with the `input.cxx` file from the main DES3D source code, one needs to read the changes to `input.cxx` and add them to `parameters.js`.
 * More sophisticated UI for list-based parameters (e.g., materials, fault segments) if applicable.
 * Advanced validation based on parameter interdependencies or ranges.
 * Visual themes or styling improvements.
 
 ---
-*This README was last updated on May 12, 2025.*
+*This README was last updated on August 14, 2026.*
