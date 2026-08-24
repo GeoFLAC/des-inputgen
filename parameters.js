@@ -155,8 +155,8 @@ const parameters = [
     },
     { group: "control", fullName: "control.damping_factor", shortName: "damping_factor", cppType: "double", htmlType: "number", description: "A factor for force damping (0-1)", defaultValue: "0.8", isRequired: false, attrs: { step: "any", min: "0", max: "1" } },
     {
-        group: "control", fullName: "control.ref_pressure_option", shortName: "ref_pressure_option", cppType: "int", htmlType: "select", description: "How to define reference pressure?\n0: using density of the 0-th element to compute lithostatic pressure.\n1: computing reference pressure from the PREM model.\n2: computing reference pressure from the PREM model, modified for continent.", defaultValue: "0", isRequired: false, options: [
-            { value: "0", text: "0: From 0-th element density" },
+        group: "control", fullName: "control.ref_pressure_option", shortName: "ref_pressure_option", cppType: "int", htmlType: "select", description: "How to define reference pressure?\n0: using density of the mat.mattype_ref-th material to compute lithostatic pressure.\n1: computing reference pressure from the PREM model.\n2: computing reference pressure from the PREM model, modified for continent.\nAny other value is rejected at startup.", defaultValue: "0", isRequired: false, options: [
+            { value: "0", text: "0: From mat.mattype_ref material density" },
             { value: "1", text: "1: From PREM model" },
             { value: "2", text: "2: From PREM model (continent modified)" }
         ]
@@ -382,7 +382,7 @@ const parameters = [
         ]
     },
     { group: "mat", fullName: "mat.num_materials", shortName: "num_materials", cppType: "int", htmlType: "number", description: "Number of material types", defaultValue: "1", isRequired: false, attrs: { step: "1", min: "1" }, shortNameAlias: "nmat" }, // C++ uses p.mat.nmat
-    { group: "mat", fullName: "mat.mattype_ref", shortName: "mattype_ref", cppType: "int", htmlType: "number", description: "Index of reference material. For compute_dt(), ref_pressure()", defaultValue: "0", isRequired: false, attrs: { step: "1", min: "0" } },
+    { group: "mat", fullName: "mat.mattype_ref", shortName: "mattype_ref", cppType: "int", htmlType: "number", description: "Index of reference material. For compute_dt(), compute_mass() and ref_pressure()", defaultValue: "0", isRequired: false, attrs: { step: "1", min: "0" } },
     { group: "mat", fullName: "mat.mattype_mantle", shortName: "mattype_mantle", cppType: "int", htmlType: "number", description: "Index of mantle material. For continental thermal gradient", defaultValue: "0", isRequired: false, attrs: { step: "1" } },
     { group: "mat", fullName: "mat.mattype_depleted_mantle", shortName: "mattype_depleted_mantle", cppType: "int", htmlType: "number", description: "Index of depleted mantle material. For phase change of middle ocean ridge", defaultValue: "0", isRequired: false, attrs: { step: "1" } },
     { group: "mat", fullName: "mat.mattype_partial_melting_mantle", shortName: "mattype_partial_melting_mantle", cppType: "int", htmlType: "number", description: "Index of parital melting mantle material. For phase change of middle ocean ridge", defaultValue: "0", isRequired: false, attrs: { step: "1" } },
