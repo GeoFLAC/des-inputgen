@@ -205,6 +205,19 @@ const parameters = [
     { group: "control", fullName: "control.PT_relative_tolerance", shortName: "PT_relative_tolerance", cppType: "double", htmlType: "number", description: "tolerance for relative change for breaking PT loop", defaultValue: "1e-6", isRequired: false, attrs: { step: "any" } },
     { group: "control", fullName: "control.has_moving_mesh", shortName: "has_moving_mesh", cppType: "bool", htmlType: "select", description: "Does the model update mesh coordinates (Lagrangian)?", defaultValue: "true", isRequired: false, options: [{ value: "true", text: "Yes" }, { value: "false", text: "No" }] },
     { group: "control", fullName: "control.use_global_velocity_scaling", shortName: "use_global_velocity_scaling", cppType: "bool", htmlType: "select", description: "Use the global maximum model velocity to scale both dt and pseudo-density/mass scaling.", defaultValue: "false", isRequired: false, options: [{ value: "true", text: "Yes" }, { value: "false", text: "No" }] },
+    {
+        group: "control", fullName: "control.mass_scaling_reference_speed", shortName: "mass_scaling_reference_speed", cppType: "std::string", htmlType: "select", description: "Elastic-speed ceiling used by global velocity scaling. It sets the floor of the fictitious density rho_fict = K / v_elastic^2.\nshear: sqrt(G/rho), giving rho_fict >= rho K/G (historical default).\nbulk: sqrt(K/rho), giving rho_fict >= rho and restoring physical density when the pseudo-wave speed reaches the bulk-wave ceiling.", defaultValue: "shear", isRequired: false, options: [
+            { value: "shear", text: "shear: sqrt(G/rho) (historical default)" },
+            { value: "bulk", text: "bulk: sqrt(K/rho)" }
+        ]
+    },
+    {
+        group: "control", fullName: "control.rsf_slip_rate_projection_option", shortName: "rsf_slip_rate_projection_option", cppType: "int", htmlType: "select", description: "Velocity-dimensional rate supplied to the RSF update.\n0: project the element velocity onto the maximum-shear direction inferred from stress (default; the historical behavior).\n1: use V = 2 w eps_II from the total deviatoric strain rate, where w is the element's minimum altitude.", defaultValue: "0", isRequired: false, options: [
+            { value: "0", text: "0: Project velocity onto max-shear direction" },
+            { value: "1", text: "1: V = 2 w eps_II (total deviatoric strain rate)" }
+        ]
+    },
+    { group: "control", fullName: "control.rsf_dtheta_max", shortName: "rsf_dtheta_max", cppType: "double", htmlType: "number", description: "For adaptive stepping with the aging law and total-strain rate option 1, apply dt <= f D_c / V and dt <= f theta over all elements. The two bounds limit slip within one characteristic distance and fractional healing per step. f must be in [0, 2); 0 (default) disables this state-update limit.", defaultValue: "0.0", isRequired: false, attrs: { step: "any", min: "0" } },
 
     // bc section
     { group: "bc", fullName: "bc.surface_temperature", shortName: "surface_temperature", cppType: "double", htmlType: "number", description: "Surface temperature (in Kelvin)", defaultValue: "273", isRequired: false, attrs: { step: "any" } },
@@ -359,6 +372,13 @@ const parameters = [
     { group: "ic", fullName: "ic.isostasy_adjustment_time_in_yr", shortName: "isostasy_adjustment_time_in_yr", cppType: "double", htmlType: "number", description: "Time for spinning up isostasy adjustment.", defaultValue: "0", isRequired: false, attrs: { step: "any" } },
     { group: "ic", fullName: "ic.excess_pore_pressure", shortName: "excess_pore_pressure", cppType: "double", htmlType: "number", description: "Initial excess_pore_pressure except for boundary.", defaultValue: "0.0", isRequired: false, attrs: { step: "any" } },
     { group: "ic", fullName: "ic.has_body_force_adjustment", shortName: "has_body_force_adjustment", cppType: "bool", htmlType: "select", description: "Conducting PT loop to get initial stress field from inital guess", defaultValue: "false", isRequired: false, options: [{ value: "true", text: "Yes" }, { value: "false", text: "No" }] },
+    {
+        group: "ic", fullName: "ic.initial_stress_option", shortName: "initial_stress_option", cppType: "int", htmlType: "select", description: "How to initialize stress?\n0: use the legacy gravity-dependent initialization.\n1: prescribe a homogeneous absolute Cauchy stress tensor; requires gravity=0.", defaultValue: "0", isRequired: false, options: [
+            { value: "0", text: "0: Legacy gravity-dependent initialization" },
+            { value: "1", text: "1: Homogeneous absolute stress (requires gravity=0)" }
+        ]
+    },
+    { group: "ic", fullName: "ic.initial_stress", shortName: "initial_stress", cppType: "std::string", htmlType: "text", description: "Homogeneous absolute Cauchy stress in Pa (compression is negative), used for initial_stress_option=1.\n3D: '[sxx,syy,szz,sxy,sxz,syz]' (default [0,0,0,0,0,0]).\n2D: '[sxx,szz,sxz]' (default [0,0,0]); plane strain initializes syy=(sxx+szz)/2.", defaultValue: "[0,0,0,0,0,0]", isRequired: false, placeholder: "[sxx, syy, szz, sxy, sxz, syz]" },
 
     // mat section
     {
