@@ -216,6 +216,24 @@
             border-left: 3px solid blue;
         }
 
+        .param-item.default-folded {
+            display: none;
+        }
+
+        #foldBar {
+            display: none;
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            font-size: 0.9em;
+        }
+
+        #foldBar label {
+            cursor: pointer;
+        }
+
         .param-item input.default-value,
         .param-item select.default-value {
             color: black;
@@ -254,6 +272,12 @@
             <small class="help-text">Select a configuration file to pre-fill the form. Parameters in the file will
                 update the fields below.</small>
             <p id="uploadInfoMsg" style="margin-top: 10px; font-size: 0.9em;"></p>
+        </div>
+
+        <div id="foldBar">
+            <label><input type="checkbox" id="foldDefaultsToggle" checked>
+                Hide parameters left at their default values</label>
+            <span id="foldSummary" style="color:#666; margin-left:8px;"></span>
         </div>
 
         <form id="parameterForm">
@@ -341,6 +365,7 @@
 
                 const legendTextSpan = document.createElement('span');
                 legendTextSpan.textContent = groupName.charAt(0).toUpperCase() + groupName.slice(1) + " Parameters";
+                fieldset.dataset.title = legendTextSpan.textContent;
                 legend.appendChild(legendTextSpan);
 
                 const toggleIcon = document.createElement('span');
@@ -436,6 +461,43 @@
             }
 
 
+            // --- Fold (hide) parameters that are still at their default values ---
+            // A parameter is folded only if it was not set by the loaded file, still holds its
+            // default value, and is not a required field that is still empty.
+            const foldBar = document.getElementById('foldBar');
+            const foldToggle = document.getElementById('foldDefaultsToggle');
+            const foldSummary = document.getElementById('foldSummary');
+
+            function applyDefaultFolding(fold) {
+                let totalHidden = 0;
+                document.querySelectorAll('#parameterForm fieldset.collapsible-section').forEach(fieldset => {
+                    const items = fieldset.querySelectorAll('.param-item');
+                    let hidden = 0;
+                    items.forEach(item => {
+                        const input = item.querySelector('input, select');
+                        const param = parameters.find(p => p.fullName === input.id);
+                        const defaultValue = (param && param.defaultValue !== undefined) ? param.defaultValue : '';
+                        const atDefault = input.classList.contains('default-value') && input.value === defaultValue;
+                        const keepVisible = param && param.isRequired && input.value === '';
+                        const folded = fold && atDefault && !keepVisible;
+                        item.classList.toggle('default-folded', folded);
+                        if (folded) hidden++;
+                    });
+                    totalHidden += hidden;
+                    const titleSpan = fieldset.querySelector('.collapsible-header span');
+                    titleSpan.textContent = fieldset.dataset.title +
+                        (hidden ? ` (${items.length - hidden} of ${items.length} shown)` : '');
+                    // An expanded section has a fixed max-height; recompute it for the new content.
+                    if (fieldset.classList.contains('expanded')) {
+                        const content = fieldset.querySelector('.collapsible-content');
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                    }
+                });
+                foldSummary.textContent = totalHidden ? `(${totalHidden} hidden)` : '';
+            }
+
+            foldToggle.addEventListener('change', () => applyDefaultFolding(foldToggle.checked));
+
             // --- Function to Parse and Apply Config Content (from local file or GitHub) ---
             function parseAndApplyConfigFile(content, sourceName = "Uploaded file") {
                 resetAllInputStyles(); // Reset styles and values to initial defaults first
@@ -498,6 +560,10 @@
                         }
                     }
                 });
+
+                foldBar.style.display = 'block';
+                foldToggle.checked = true;
+                applyDefaultFolding(true);
 
                 // Update appropriate status message
                 if (sourceName === "Uploaded file" && uploadInfoMsgP) {
