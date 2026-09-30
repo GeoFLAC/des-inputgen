@@ -392,7 +392,7 @@ const parameters = [
             { value: "elasto-visco-plastic-rate-state-friction", text: "elasto-visco-plastic-rate-state-friction" }
         ]
     },
-    { group: "mat", fullName: "mat.is_plane_strain", shortName: "is_plane_strain", cppType: "bool", htmlType: "select", description: "Is the rheology formulation in plane strain (2D elasto-plastic case only)?", defaultValue: "false", isRequired: false, options: [{ value: "true", text: "Yes" }, { value: "false", text: "No" }] },
+    { group: "mat", fullName: "mat.is_plane_strain", shortName: "is_plane_strain", cppType: "bool", htmlType: "select", description: "Use plane-strain constitutive updates in 2D (elastic and elasto-plastic paths).", defaultValue: "false", isRequired: false, options: [{ value: "true", text: "Yes" }, { value: "false", text: "No" }] },
     {
         group: "mat", fullName: "mat.phase_change_option", shortName: "phase_change_option", cppType: "int", htmlType: "select", description: "What kind of phase changes?\n0: no phase changes.\n1: simple rules of subduction-related phase changes. See SimpleSubduction class in phasechanges.cxx for more details.\n2: simple rules of middle ocean ridge formation. See SimpleRifting class in phasechanges.cxx for more details.\n101: custom phase changes.", defaultValue: "0", isRequired: false, options: [
             { value: "0", text: "0: No phase changes" },
